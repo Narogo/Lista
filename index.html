@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+	<meta charset="UTF-8">
+	<title>MySQL Table Manager With Bootstrap/jQuery/Ajax/PHP/MySQL</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="stylesheet" href="css/dataTables.bootstrap.min.css">
+</head>
+
+<body>
+	<div class="container" style="margin-top: 30px;" >
+
+		<div class="row">
+			<div class="modal fade" id="listaModal" tabindex="-1">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h2 class="modal-title">
+								Nowe Zadanie
+							</h2>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+
+							<h5>Tytul</h5>
+						</div>
+
+						<div class="modal-body">
+
+							<div id="editContent">
+								<input class="form-control" placeholder="Nazwa" id="name"> <br>
+								<textarea class="form-control" id="shortDes" placeholder="Krótki opis zadania"></textarea> <br>
+								<textarea class="form-control" id="longDes" placeholder="Długi opis zadania"></textarea> <br>
+								<input type="hidden" id="editID" value="0">
+							</div>
+
+							<div id="showContent" style="display: none;">
+
+								<h3>krótki Opis</h3>
+
+								<div id="shortDescD">
+
+								</div>
+
+								<h3>Długi Opis</h3>
+
+								<div id="longDescD">
+
+								</div>
+								<hr>
+							</div>
+
+						</div>
+
+						<div class="modal-footer">
+							<input type="button" class="btn btn-success" value="Zapisz"  id="addBtn" onclick="saveRow('addNew')" >
+							<input type="button" class="btn btn-secondary" value="Zamknij" id="closeBtn" data-dismiss="modal">
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		<div class="row">
+			<div class="col-md-12">
+				<h2>Uczymy sie</h2>
+				<button type="button" class="btn btn-primary" style="float:right; margin-left:5px;" onClick="window.location.reload();">Odśwież strone</button>
+				<button type="button"  style="float:right"  class="btn btn-success" id="addNew" data-toggle="modal" data-target="#listaModal">Dodaj</button>
+				<table class="table table-hover table-bordered">
+					<thead>
+						<tr>
+							<td>Nr</td>
+							<td>Nazwa</td>
+							<td>Data dodania zadania</td>
+							<td>Data Rozpoczecia</td>
+							<td>Data Zakończenia</td>
+							<td>Aktywne</td>
+							<td>Opcje</td>
+						</tr>
+					</thead>
+					<tbody>
+
+					</tbody>
+				</table>
+
+			</div>
+		</div>
+	</div>
+
+	<script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+	<script src="js/jquery.dataTables.min.js" type="text/javascript"></script>
+	<script src="js/dataTables.bootstrap.min.js" type="text/javascript"></script>
+	<script type="text/javascript"></script>
+
+
+	<script type="text/javascript">
+
+		$(document).ready(function()
+		{
+			show();
+			$("#listaModal").on('hidden.bs.modal', function()
+			{
+				$("#showContent").fadeOut();
+				$("#editContent").fadeIn();
+				$("#editID").val(0)
+				$("#longDes").val("");
+				$(".modal-title").val("");
+				$("#shortDes").val("");
+				$("#name").val("");
+				$("#closeBtn").fadeIn();
+				$("#addBtn").attr('value', 'Zapisz').attr('onclick', "saveRow('addNew')").fadeIn();
+			});
+		});
+
+		function show()
+		{
+			$.ajax
+			({
+				url: 'index.php',
+				method: 'POST',
+				dataType: 'text',
+				data:
+						{
+							key:'getRows'
+						},
+				success: function(response)
+				{
+					$('tbody').append(response);
+				},
+				error()
+				{
+					console.log("error_show");
+				}
+			});
+		}
+
+		function saveRow(key)
+		{
+			var xkey = key;
+			var name = $("#name");
+			var shortDes = $("#shortDes");
+			var longDes = $("#longDes");
+			var editID = $("#editID");
+
+			if(validate(name) && validate(shortDes) && validate(longDes))
+			{
+				$.ajax
+				({
+					url : 'index.php',
+					method: 'POST',
+					datatype: 'text',
+					data:
+							{
+								key: xkey,
+								name: name.val(),
+								shortDes: shortDes.val(),
+								longDes: longDes.val(),
+                                editID: editID.val()
+							},
+					success: function(response)
+					{
+                        $("#lista_"+editID.val()).html(name.val());
+						$("#listaModal").modal('hide');
+					},
+					error()
+					{
+						console.log("error_add");
+					}
+				});
+			}
+
+		}
+
+		function deleteR(rowID)
+		{
+			if(confirm("Jesteś pewny?"))
+			{
+				$.ajax
+				({
+					url : 'index.php',
+					method: 'POST',
+					datatype: 'text',
+					data:
+							{
+								key: "delete",
+								rowID: rowID
+							},
+					success:function (response)
+					{
+						$("#lista_"+rowID).parent().remove();
+					}
+				})
+			}
+		}
+		function edit(rowID)
+		{
+			$.ajax
+			({
+				url: 'index.php',
+				method: 'POST',
+				dataType: "json",
+				data:
+						{
+							key: 'getEdit',
+							id: rowID
+						},
+				success: function (response)
+				{
+					$("#editContent").fadeIn();
+					$("#showContent").fadeOut();
+					$("#name").val(response.name1);
+					$("#shortDes").val(response.shortDes1);
+					$("#longDes").val(response.longDes1);
+					$("#editID").val(rowID);
+					$("#listaModal").modal('show');
+					$("#addBtn").attr('value', 'Edytuj').attr('onclick', "saveRow('update')");
+					$("#closeBtn").fadeIn();
+				}
+			});
+
+
+		}
+
+		function view(rowID)
+		{
+			$.ajax
+			({
+				url: 'index.php',
+				method: 'POST',
+				dataType: "json",
+				data:
+						{
+							key: 'getEdit',
+							id: rowID
+						},
+				success: function (response)
+				{
+					$("#showContent").fadeIn();
+					$("#editContent").fadeOut();
+					$("#nameD").html(response.name1);
+					$("#shortDescD").html(response.shortDes1);
+					$("#longDescD").html(response.longDes1);
+					$("#listaModal").modal('show');
+					$("#addBtn").fadeOut();
+					$("#closeBtn").fadeIn();
+				}
+			});
+
+		}
+
+		function start(rowID)
+		{
+			if(confirm("Czy chcesz  zacząć te zadanie?"))
+			{
+				$.ajax
+				({
+					url: 'index.php',
+					method: 'POST',
+					dataType: "text",
+					data:
+							{
+								key: 'start',
+								id: rowID
+							},
+					success: function (response)
+					{
+						location.reload();
+					}
+				});
+			}
+
+		}
+
+		function finish(rowID)
+		{
+			if(confirm("Czy chcesz  zakończyć te zadanie?"))
+			{
+				$.ajax
+				({
+					url: 'index.php',
+					method: 'POST',
+					dataType: "text",
+					data:
+							{
+								key: 'finish',
+								id: rowID
+							},
+					success: function (response)
+					{
+						if(response == "error")
+						{
+							alert("Nie możesz zakończyć tego zadania");
+						}
+						else
+						{
+							location.reload();
+						}
+					}
+				});
+			}
+
+		}
+
+		function validate(caller)
+		{
+			if(caller.val() == '')
+			{
+				caller.css('border', '1px solid red');
+				return false;
+			}
+			else
+			{
+				caller.css('border', '1px solid green');
+				console.log("Ser");
+
+			}
+			return true;
+		}
+
+
+
+	</script>
+</body>
+</html>
